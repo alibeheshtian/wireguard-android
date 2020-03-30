@@ -28,10 +28,13 @@ import com.wireguard.android.util.ModuleLoader
 import com.wireguard.android.util.RootShell
 import com.wireguard.android.util.ToolsInstaller
 import java9.util.concurrent.CompletableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.Locale
 
-class Application : android.app.Application(), OnSharedPreferenceChangeListener {
+class Application : android.app.Application(), OnSharedPreferenceChangeListener, CoroutineScope by CoroutineScope(Dispatchers.Default) {
     private val futureBackend = CompletableFuture<Backend>()
     private lateinit var asyncWorker: AsyncWorker
     private var backend: Backend? = null
@@ -71,7 +74,7 @@ class Application : android.app.Application(), OnSharedPreferenceChangeListener 
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         }
         tunnelManager = TunnelManager(FileConfigStore(applicationContext))
-        tunnelManager.onCreate()
+        launch { tunnelManager.onCreate() }
         asyncWorker.supplyAsync(Companion::getBackend).thenAccept { futureBackend.complete(it) }
         sharedPreferences.registerOnSharedPreferenceChangeListener(this)
     }
