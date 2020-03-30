@@ -30,11 +30,13 @@ import com.wireguard.android.util.ToolsInstaller
 import java9.util.concurrent.CompletableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.Locale
+import kotlin.coroutines.CoroutineContext
 
-class Application : android.app.Application(), OnSharedPreferenceChangeListener, CoroutineScope by CoroutineScope(Dispatchers.Default) {
+class Application : android.app.Application(), OnSharedPreferenceChangeListener, CoroutineScope {
     private val futureBackend = CompletableFuture<Backend>()
     private lateinit var asyncWorker: AsyncWorker
     private var backend: Backend? = null
@@ -43,6 +45,9 @@ class Application : android.app.Application(), OnSharedPreferenceChangeListener,
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var toolsInstaller: ToolsInstaller
     private lateinit var tunnelManager: TunnelManager
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.Default
 
     override fun attachBaseContext(context: Context) {
         super.attachBaseContext(context)
@@ -85,6 +90,7 @@ class Application : android.app.Application(), OnSharedPreferenceChangeListener,
     }
 
     override fun onTerminate() {
+        job.cancel()
         sharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
         super.onTerminate()
     }
