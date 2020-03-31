@@ -26,6 +26,8 @@ import com.wireguard.android.util.ExceptionLoggers
 import com.wireguard.config.Config
 import java9.util.concurrent.CompletableFuture
 import java9.util.concurrent.CompletionStage
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
@@ -97,6 +99,15 @@ class TunnelManager(private val configStore: ConfigStore) : BaseObservable() {
 
     fun getTunnelConfig(tunnel: ObservableTunnel): CompletionStage<Config> = getAsyncWorker()
             .supplyAsync { configStore.load(tunnel.name) }.thenApply(tunnel::onConfigChanged)
+
+    suspend fun getTunnelConfigAsync(tunnel: ObservableTunnel): Deferred<Config> = withContext(Dispatchers.IO) {
+        val deferred = CompletableDeferred<Config>()
+        configStore.load(tunnel.name).also {
+            tunnel.onConfigChanged(it)
+            deferred.complete(it)
+        }
+        deferred
+    }
 
     suspend fun onCreate() = withContext(Dispatchers.IO) {
         val storedConfigs = async { configStore.enumerate() }
