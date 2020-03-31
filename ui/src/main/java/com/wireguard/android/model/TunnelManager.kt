@@ -109,6 +109,10 @@ class TunnelManager(private val configStore: ConfigStore) : BaseObservable() {
         deferred
     }
 
+    suspend fun getTunnelsAsync(): ObservableSortedKeyedArrayList<String, ObservableTunnel> = withContext(Dispatchers.IO) {
+        tunnels.get()
+    }
+
     suspend fun onCreate() = withContext(Dispatchers.IO) {
         val storedConfigs = async { configStore.enumerate() }
         val runningTunnels = async { getBackend().runningTunnelNames }
